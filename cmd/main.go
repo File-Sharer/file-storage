@@ -11,6 +11,7 @@ import (
 	"github.com/File-Sharer/file-storage/internal/handler"
 	"github.com/File-Sharer/file-storage/internal/server"
 	"github.com/File-Sharer/file-storage/internal/service"
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -19,6 +20,10 @@ func main() {
 	logger, err := newLogger()
 	if err != nil {
 		log.Panicf("failed to create zap logger: %s", err.Error())
+	}
+
+	if err := loadEnv(); err != nil {
+		log.Panicf("failed to load environment variables: %s", err.Error())
 	}
 
 	if err := initConfig(); err != nil {
@@ -49,6 +54,10 @@ func main() {
 	<-quit
 
 	log.Println("Server shutting down...")
+}
+
+func loadEnv() error {
+	return godotenv.Load()
 }
 
 func initConfig() error {

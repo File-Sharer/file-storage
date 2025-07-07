@@ -85,18 +85,10 @@ func (s *uploaderService) Upload(d model.UploadData) (string, error) {
 
 func (s *uploaderService) Delete(paths []string) error {
 	for _, path := range paths {
-		cleanPath := filepath.Clean(path)
+		path = filepath.Clean(path)
 
-		if strings.HasPrefix(cleanPath, "/") {
-			cleanPath = "./" + cleanPath[1:]
-		}
-
-		if !strings.HasPrefix(cleanPath, "./public/") && !strings.HasPrefix(cleanPath, "public/") {
-			continue
-		}
-
-		if err := os.Remove(cleanPath); err != nil {
-			s.logger.Sugar().Errorf("failed to remove path(%s): %s", cleanPath, err.Error())
+		if err := os.Remove(path); err != nil {
+			s.logger.Sugar().Errorf("failed to remove path(%s): %s", path, err.Error())
 		}
 	}
 
