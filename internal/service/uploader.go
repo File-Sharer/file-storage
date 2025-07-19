@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DEFAULT_FILE_PATH_PREFIX = "public/"
+	DEFAULT_FILE_PATH_PREFIX = "files/"
 	FILE_URL_STRING = "%s/%s"
 )
 
@@ -29,10 +29,10 @@ func newUploaderService(logger *zap.Logger) Uploader {
 	}
 }
 
-func (s *uploaderService) saveFile(path string, file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
+func (s *uploaderService) saveFile(path string, file multipart.File, fileHeader *multipart.FileHeader) (int64, string, error) {
 	ext := filepath.Ext(fileHeader.Filename)
 	if ext == "" {
-		return "", ErrFileMustHaveAValidExtension
+		return 0, "", ErrFileMustHaveAValidExtension
 	}
 
 	fileID := uuid.New()
@@ -44,7 +44,7 @@ func (s *uploaderService) saveFile(path string, file multipart.File, fileHeader 
 
 		if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 			s.logger.Sugar().Errorf("failed to create directories: %s", err.Error())
-			return "", err
+			return 0, "", err
 		}
 	} else {
 		filePath = filepath.Join(DEFAULT_FILE_PATH_PREFIX, fileID.String() + ext)
@@ -53,31 +53,38 @@ func (s *uploaderService) saveFile(path string, file multipart.File, fileHeader 
 	createdFile, err := os.Create(filePath)
 	if err != nil {
 		s.logger.Sugar().Errorf("failed to create file: %s", err.Error())
-		return "", err
+		return 0, "", err
 	}
 	defer createdFile.Close()
 
 	if _, err := io.Copy(createdFile, file); err != nil {
 		s.logger.Sugar().Errorf("failed to copy src: %s", err.Error())
-		return "", err
+		return 0, "", err
 	}
 
 	filePath = strings.ReplaceAll(filePath, "\\", "/")
 
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		s.logger.Sugar().Errorf("failed to get file(%s) info: %s", filePath, err.Error())
+		return 0, "", err
+	}
+
 	fileURL := fmt.Sprintf(FILE_URL_STRING, viper.GetString("app.origin"), filePath)
-	return fileURL, nil
+
+	return fileInfo.Size(), fileURL, nil
 }
 
-func (s *uploaderService) Upload(d model.UploadData) (string, error) {
+func (s *uploaderService) Upload(d model.UploadData) (int64, string, error) {
 	buff := make([]byte, 512)
 	if _, err := d.File.Read(buff); err != nil {
 		s.logger.Sugar().Errorf("error while uploading a file: %s", err.Error())
-		return "", err
+		return 0, "", err
 	}
 
 	if _, err := d.File.Seek(0, io.SeekStart); err != nil {
 		s.logger.Sugar().Errorf("error while uploading a file: %s", err.Error())
-		return "", err
+		return 0, "", err
 	}
 
 	return s.saveFile(d.Path, d.File, d.FileHeader)

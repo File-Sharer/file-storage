@@ -22,7 +22,7 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 
 	path := strings.TrimSpace(r.FormValue("path"))
 
-	url, err := h.services.Uploader.Upload(model.UploadData{
+	fileSize, url, err := h.services.Uploader.Upload(model.UploadData{
 		Path: path,
 		File: file,
 		FileHeader: fileHeader,
@@ -35,8 +35,11 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(url))
+	dto.Respond(w, http.StatusOK, dto.UploadResponse{
+		Ok: true,
+		URL: url,
+		FileSize: fileSize,
+	})
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {

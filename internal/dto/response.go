@@ -10,10 +10,17 @@ type BasicResponse struct {
 	Details string `json:"details"`
 }
 
-func Respond(w http.ResponseWriter, code int, resp BasicResponse) {
+type UploadResponse struct {
+	Ok       bool   `json:"ok"`
+	URL      string `json:"url"`
+	FileSize int64  `json:"file_size"`
+}
+
+func Respond(w http.ResponseWriter, code int, resp interface{}) {
 	body, err := json.Marshal(resp)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(code)
