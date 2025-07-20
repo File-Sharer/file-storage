@@ -30,8 +30,8 @@ func (h *Handler) Init() http.Handler {
 		}
 	})
 
-	publicDir := "public/"
-	mux.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir(publicDir))))
+	filesDir := "files/"
+	mux.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(filesDir))))
 
 	return h.RequireTokenMiddleware(mux)
 }
