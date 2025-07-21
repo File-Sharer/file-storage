@@ -92,7 +92,7 @@ func (s *uploaderService) Upload(d model.UploadData) (int64, string, error) {
 
 func (s *uploaderService) Delete(paths []string) error {
 	for _, path := range paths {
-		path = filepath.Clean(path)
+		path = filepath.Join(DEFAULT_FILE_PATH_PREFIX, path)
 
 		if err := os.Remove(path); err != nil {
 			s.logger.Sugar().Errorf("failed to remove path(%s): %s", path, err.Error())
