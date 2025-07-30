@@ -101,3 +101,11 @@ func (s *uploaderService) Delete(paths []string) error {
 
 	return nil
 }
+
+func (s *uploaderService) CreateFolder(path string) error {
+	if !strings.HasPrefix(path, "files/") {
+		path = "files/" + path
+	}
+
+	return os.MkdirAll(path, os.ModePerm)
+}

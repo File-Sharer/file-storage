@@ -30,6 +30,15 @@ func (h *Handler) Init() http.Handler {
 		}
 	})
 
+	mux.HandleFunc("/folders", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.createFolder(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
+
 	filesDir := "files/"
 	mux.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(filesDir))))
 

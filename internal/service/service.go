@@ -8,6 +8,7 @@ import (
 type Uploader interface {
 	Upload(d model.UploadData) (int64, string, error)
 	Delete(paths []string) error
+	CreateFolder(path string) error
 }
 
 type Service struct {

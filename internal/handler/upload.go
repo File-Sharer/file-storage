@@ -74,3 +74,31 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		Details: "",
 	})
 }
+
+type createFolderReq struct {
+	Path string `json:"path"`
+}
+
+func (h *Handler) createFolder(w http.ResponseWriter, r *http.Request) {
+	var input createFolderReq
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		dto.Respond(w, http.StatusBadRequest, dto.BasicResponse{
+			Ok: false,
+			Details: err.Error(),
+		})
+		return
+	}
+
+	if err := h.services.Uploader.CreateFolder(input.Path); err != nil {
+		dto.Respond(w, http.StatusInternalServerError, dto.BasicResponse{
+			Ok: false,
+			Details: err.Error(),
+		})
+		return
+	}
+
+	dto.Respond(w, http.StatusOK, dto.BasicResponse{
+		Ok: true,
+		Details: "",
+	})
+}
