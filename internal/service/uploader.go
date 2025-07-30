@@ -1,8 +1,11 @@
 package service
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -93,6 +96,7 @@ func (s *uploaderService) Upload(d model.UploadData) (int64, string, error) {
 func (s *uploaderService) Delete(paths []string) error {
 	for _, path := range paths {
 		path = filepath.Join(DEFAULT_FILE_PATH_PREFIX, path)
+		path = filepath.Clean(path)
 
 		if err := os.Remove(path); err != nil {
 			s.logger.Sugar().Errorf("failed to remove path(%s): %s", path, err.Error())
@@ -103,9 +107,66 @@ func (s *uploaderService) Delete(paths []string) error {
 }
 
 func (s *uploaderService) CreateFolder(path string) error {
-	if !strings.HasPrefix(path, "files/") {
-		path = "files/" + path
+	path = filepath.Join(DEFAULT_FILE_PATH_PREFIX, path)
+	path = filepath.Clean(path)
+	return os.MkdirAll(path, os.ModePerm)
+}
+
+func (s *uploaderService) GetZippedFolder(folderPath string) ([]byte, error) {
+	basePath := filepath.Join(DEFAULT_FILE_PATH_PREFIX, folderPath)
+	basePath = filepath.Clean(basePath)
+
+	buf := new(bytes.Buffer)
+	w := zip.NewWriter(buf)
+
+	err := filepath.Walk(basePath, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(filepath.Dir(basePath), path)
+		if err != nil {
+			return err
+		}
+		relPath = strings.ReplaceAll(relPath, "\\", "/")
+
+		if info.IsDir() {
+			if relPath != "" {
+				_, err := w.Create(relPath + "/")
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		writer, err := w.Create(relPath)
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(writer, file); err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		s.logger.Sugar().Errorf("failed to walk path(%s): %s", basePath, err.Error())
+		w.Close()
+		return nil, ErrInternal
 	}
 
-	return os.MkdirAll(path, os.ModePerm)
+	if err := w.Close(); err != nil {
+		s.logger.Sugar().Errorf("failed to close zip writer: %s", err.Error())
+		return nil, ErrInternal
+	}
+
+	return buf.Bytes(), nil
 }

@@ -34,6 +34,8 @@ func (h *Handler) Init() http.Handler {
 		switch r.Method {
 		case http.MethodPost:
 			h.createFolder(w, r)
+		case http.MethodGet:
+			h.getZippedFolder(w, r)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}

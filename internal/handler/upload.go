@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -101,4 +102,33 @@ func (h *Handler) createFolder(w http.ResponseWriter, r *http.Request) {
 		Ok: true,
 		Details: "",
 	})
+}
+
+type getZippedFolderReq struct {
+	Path string `json:"path"`
+}
+
+func (h *Handler) getZippedFolder(w http.ResponseWriter, r *http.Request) {
+	var input getZippedFolderReq
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		dto.Respond(w, http.StatusBadRequest, dto.BasicResponse{
+			Ok: false,
+			Details: err.Error(),
+		})
+		return
+	}
+
+	data, err := h.services.Uploader.GetZippedFolder(input.Path)
+	if err != nil {
+		dto.Respond(w, http.StatusInternalServerError, dto.BasicResponse{
+			Ok: false,
+			Details: err.Error(),
+		})
+		return
+	}
+
+	parts := strings.Split(input.Path, "/")
+	w.Header().Add("Content-Type", "application/zip")
+	w.Header().Add("filename", parts[len(parts)-1])
+	io.Copy(w, bytes.NewReader(data))
 }
