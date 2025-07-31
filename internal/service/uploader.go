@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/File-Sharer/file-storage/internal/model"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -38,19 +37,18 @@ func (s *uploaderService) saveFile(path string, file multipart.File, fileHeader 
 		return 0, "", ErrFileMustHaveAValidExtension
 	}
 
-	fileID := uuid.New()
 	var filePath string
 	path = strings.TrimSpace(path)
 	if path != "" {
 		dirPath := filepath.Join(DEFAULT_FILE_PATH_PREFIX, path)
-		filePath = filepath.Join(dirPath, fileID.String() + ext)
+		filePath = filepath.Join(dirPath, fileHeader.Filename)
 
 		if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 			s.logger.Sugar().Errorf("failed to create directories: %s", err.Error())
 			return 0, "", err
 		}
 	} else {
-		filePath = filepath.Join(DEFAULT_FILE_PATH_PREFIX, fileID.String() + ext)
+		filePath = filepath.Join(DEFAULT_FILE_PATH_PREFIX, fileHeader.Filename)
 	}
 
 	createdFile, err := os.Create(filePath)
