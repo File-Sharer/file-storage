@@ -65,15 +65,9 @@ func (s *uploaderService) saveFile(path string, file multipart.File, fileHeader 
 
 	filePath = strings.ReplaceAll(filePath, "\\", "/")
 
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		s.logger.Sugar().Errorf("failed to get file(%s) info: %s", filePath, err.Error())
-		return 0, "", err
-	}
-
 	fileURL := fmt.Sprintf(FILE_URL_STRING, viper.GetString("app.origin"), filePath)
 
-	return fileInfo.Size(), fileURL, nil
+	return fileHeader.Size, fileURL, nil
 }
 
 func (s *uploaderService) Upload(d model.UploadData) (int64, string, error) {
